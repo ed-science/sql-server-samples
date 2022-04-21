@@ -19,7 +19,7 @@ from utils import (AgRole, AgMode, OperatorYaml, SqlSecretsYaml,
 
 DEFAULT_K8S_AGENTS_IMAGE = (
     "mcr.microsoft.com/mssql/ha:2019-CTP2.1-ubuntu")
-  
+
 
 
 TEMPLATES_DIR = "templates"
@@ -42,9 +42,9 @@ FAILOVER_YAML_FILENAME = "failover.yaml"
 SQLSERVER_NAME_PREFIX = "mssql"
 DEFAULT_NUM_SQLSERVER = 3
 DEFAULT_SQLSERVER_NAMES = [
-    "{}{}".format(SQLSERVER_NAME_PREFIX, i + 1)
-    for i in range(DEFAULT_NUM_SQLSERVER)
+    f"{SQLSERVER_NAME_PREFIX}{i + 1}" for i in range(DEFAULT_NUM_SQLSERVER)
 ]
+
 DEFAULT_AG_NAME = "ag1"
 DEFAULT_NAMESPACE = "default"
 
@@ -91,7 +91,7 @@ def create_operator_yaml(namespace,
 
 
 def get_pv_name(namespace, sqlserver_name):
-    return "{}-{}-pv".format(namespace, sqlserver_name)
+    return f"{namespace}-{sqlserver_name}-pv"
 
 
 def create_pv_yaml(namespace,
@@ -148,9 +148,7 @@ def create_sqlservers_yaml(env,
                 sqlserver_yaml.set_service_type("LoadBalancer")
             else:
                 raise ValueError("Invalid Environment type")
-            for data in sqlserver_yaml.data:
-                sqlserver_yaml_list.append(data)
-
+            sqlserver_yaml_list.extend(iter(sqlserver_yaml.data))
         with open(filepath, "w") as sqlserver_yaml_file:
             yaml.dump_all(sqlserver_yaml_list, sqlserver_yaml_file)
         log(LogLevel.INFO, "SQL Server YAML file:", filepath)
@@ -240,7 +238,7 @@ def create_failover_yaml(namespace,
 # kubectl functions
 def kubectl(args, **kwargs):
     proc_args = ["kubectl"] + args
-    log(LogLevel.ALL, "Running command:", "`{}`".format(" ".join(proc_args)))
+    log(LogLevel.ALL, "Running command:", f'`{" ".join(proc_args)}`')
     proc = subprocess.run(
         args=proc_args,
         stdout=subprocess.PIPE,
@@ -451,9 +449,7 @@ def apply_specs(namespace,
                 sqlserver_yaml_file=SQLSERVER_YAML_FILENAME,
                 ag_services_yaml_file=AG_SERVICES_YAML_FILENAME):
     kconfig.load_kube_config()
-    operator_deployed = deploy_operator(namespace, operator_yaml_file)
-
-    if operator_deployed:
+    if operator_deployed := deploy_operator(namespace, operator_yaml_file):
         log(LogLevel.ALL, "Successfully deployed mssql-operator")
         log(LogLevel.ALL)
 
@@ -491,8 +487,7 @@ class ActionBase:
         self.parser.set_defaults(obj=self)
 
     def parse_args(self):
-        args = self.parser.parse_args()
-        return args
+        return self.parser.parse_args()
 
     def validate_args(self):
         return True
@@ -541,7 +536,9 @@ class DeployAction(ActionBase):
         parser.add_argument(
             "--ag",
             default=DEFAULT_AG_NAME,
-            help="name of the Availability Group. Default=" + DEFAULT_AG_NAME)
+            help=f"name of the Availability Group. Default={DEFAULT_AG_NAME}",
+        )
+
         parser.add_argument(
             "-n",
             "--namespace",
@@ -563,7 +560,9 @@ class DeployAction(ActionBase):
             "-p",
             "--sa-password",
             default=default_sa_password,
-            help="SA Password. Default='{}'".format(default_sa_password))
+            help=f"SA Password. Default='{default_sa_password}'",
+        )
+
         parser.add_argument(
             "-e",
             "--env",
@@ -580,7 +579,7 @@ class DeployAction(ActionBase):
         args.sql_servers.sort()
         sql_list = []
         for sql in args.sql_servers:
-            if len(sql_list) > 0 and sql_list[-1] == sql:
+            if sql_list and sql_list[-1] == sql:
                 log(LogLevel.WARNING, "duplicate SQL Server = ", sql)
             else:
                 sql_list.append(sql)
@@ -671,7 +670,9 @@ class FailoverAction(ActionBase):
         parser.add_argument(
             "--ag",
             default=DEFAULT_AG_NAME,
-            help="name of the Availability Group. Default=" + DEFAULT_AG_NAME)
+            help=f"name of the Availability Group. Default={DEFAULT_AG_NAME}",
+        )
+
         parser.add_argument(
             "--namespace",
             help=("name of the k8s namespace. " +
@@ -755,8 +756,9 @@ def main():
 
     # create temp directory
     working_dir = mkdtemp(
-        prefix="kube_agent_{}-".format(args.subaction),
-        suffix=(args.namespace))
+        prefix=f"kube_agent_{args.subaction}-", suffix=(args.namespace)
+    )
+
 
     # Run action here
     exitcode, spec_paths = args.obj.run(args, working_dir)
@@ -770,13 +772,12 @@ def main():
             log(LogLevel.ALL, "\t", path)
         log(LogLevel.ALL)
         try:
-            specs_file = "{}_{}_specs".format(args.subaction, args.namespace)
-            log(LogLevel.ALL, "Wrote spec paths:", "'{}'".format(specs_file))
+            specs_file = f"{args.subaction}_{args.namespace}_specs"
+            log(LogLevel.ALL, "Wrote spec paths:", f"'{specs_file}'")
             with open(specs_file, "w") as f:
                 f.write("\n".join(spec_paths) + "\n")
         except IOError as ex:
-            log(LogLevel.ALL, "Caught IOError:", ex, "writing to",
-                "'{}'".format(specs_file))
+            log(LogLevel.ALL, "Caught IOError:", ex, "writing to", f"'{specs_file}'")
     exit(exitcode)
 
 

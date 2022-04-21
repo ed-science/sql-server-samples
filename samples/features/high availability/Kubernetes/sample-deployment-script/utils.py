@@ -166,7 +166,7 @@ class OperatorYaml:
         self.data = list(data)
 
     def set_namespace(self, namespace):
-        ns_operator = "mssql-operator-{}".format(namespace)
+        ns_operator = f"mssql-operator-{namespace}"
         for doc in self.data:
             if doc["kind"] == "ClusterRole":
                 yaml_set(doc, ("metadata", "name"), ns_operator)
@@ -182,8 +182,7 @@ class OperatorYaml:
         for doc in self.data:
             if doc["kind"] == "Deployment":
                 return doc
-        else:
-            raise Exception("Invalid yaml, missing 'Deployment' spec")
+        raise Exception("Invalid yaml, missing 'Deployment' spec")
 
     def set_agent_image(self, image):
         yaml_set(self.deployment_spec,
@@ -232,17 +231,19 @@ class AgServiceYaml:
         """
         Create a concrete service.
         """
-        name = ("{}-{}".format(ag, role.value) +
-                ("-" + mode.name.lower() if role == AgRole.SECONDARY else ""))
+        name = f"{ag}-{role.value}" + (
+            f"-{mode.name.lower()}" if role == AgRole.SECONDARY else ""
+        )
+
         self.name = name
         yaml_set(self.data, ["metadata", "name"], name)
         yaml_set(self.data, ["metadata", "annotations"], annotations)
-        role_key = "role.ag.mssql.microsoft.com/{}".format(ag)
+        role_key = f"role.ag.mssql.microsoft.com/{ag}"
         yaml_set(self.data, ["spec", "selector", role_key], role.value)
         if role == AgRole.PRIMARY:
             yaml_set(self.data, ["spec", "ports", 0, "targetPort"], 1433)
         elif role == AgRole.SECONDARY:
-            mode_key = "mode.ag.mssql.microsoft.com/{}".format(ag)
+            mode_key = f"mode.ag.mssql.microsoft.com/{ag}"
             yaml_set(self.data, ["spec", "selector", mode_key], mode.value)
 
     @classmethod
@@ -317,10 +318,7 @@ class FailoverYaml:
         for doc in self.data:
             if doc["kind"] == doc_kind:
                 return doc
-        else:
-            raise Exception(
-                "Failover YAML missing {} document kind: {}".format(
-                    doc_kind, self.data))
+        raise Exception(f"Failover YAML missing {doc_kind} document kind: {self.data}")
 
 
 # YAML helpers

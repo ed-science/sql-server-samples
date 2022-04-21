@@ -84,16 +84,16 @@ class TSFeaturesExtractor(BaseEstimator, TransformerMixin):
 
         
         df.sort_values(['lastupdate','stationid'], ascending = [True, True])
-        
+
         for i in range(self.__max_lags):
-            df['lag'  + str(i)] = df.groupby(['stationid'])['availablebikes'].shift(i + 1)
-            
+            df[f'lag{str(i)}'] = df.groupby(['stationid'])['availablebikes'].shift(i + 1)
+                    
 
         df['1st_derivative'] = df.groupby('stationid')['lag0'].transform(lambda x: np.gradient(x))
         df['2nd_derivative'] = df.groupby('stationid')['1st_derivative'].transform(lambda x: np.gradient(x))
         df['fft_max_coeff'] = df.groupby(['stationid', 'month', 'day', 'hour'])['lag0'].transform(lambda x: np.amax(np.abs(np.fft.rfft(x))))
         df['fft_energy'] = df.groupby(['stationid', 'month', 'day', 'hour'])['lag0'].transform(lambda x: np.sum((np.abs(np.fft.rfft(x))) ** 2))
-       
+
         return df
 
 
@@ -156,10 +156,8 @@ class FeaturesScaler(BaseEstimator, TransformerMixin):
 
         X = StandardScaler().fit_transform(df.drop(excluded_cols, axis=1, inplace = False))
         X = np.concatenate((df.loc[:, excluded_cols].as_matrix(), X), axis = 1)
-        
-        df_out = pd.DataFrame(X, columns = cols)
 
-        return df_out
+        return pd.DataFrame(X, columns = cols)
 
 
 class RxClassifier(BaseEstimator, ClassifierMixin):  
@@ -208,10 +206,8 @@ class RxClassifier(BaseEstimator, ClassifierMixin):
          """
         if self.__clf is None:
             raise RuntimeError("Data must be fitted before calling predict!")
-            
-        predict = rx_predict_ex(self.__clf, data = X,  compute_context = self.__computecontext) 
-        predictions = np.where(predict._results['label_Pred'] == 1, 1, 0)
 
-        return predictions
+        predict = rx_predict_ex(self.__clf, data = X,  compute_context = self.__computecontext)
+        return np.where(predict._results['label_Pred'] == 1, 1, 0)
 
 

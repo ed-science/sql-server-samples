@@ -68,7 +68,7 @@ def analyze_model(clf, X_test, y_test):
   preds_proba = clf.predict_proba(X_test)[::,1]
   fpr, tpr, _ = roc_curve(y_test, preds_proba, pos_label = clf.classes_[1])
   auc = roc_auc_score(y_test, preds_proba)
-  plt.plot(fpr, tpr, label="data 1, auc=" + str(auc))
+  plt.plot(fpr, tpr, label=f"data 1, auc={str(auc)}")
   plt.legend(loc=4)
   run.log_image('ROC Curve', plot=plt)
   plt.close()

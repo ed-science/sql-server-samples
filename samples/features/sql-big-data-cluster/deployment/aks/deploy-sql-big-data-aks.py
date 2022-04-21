@@ -59,17 +59,17 @@ os.environ['AZDATA_USERNAME'] = AZDATA_USERNAME
 # os.environ['DOCKER_PASSWORD']=DOCKER_PASSWORD
 os.environ['ACCEPT_EULA']="Yes"
 
-print ("Set azure context to subscription: "+SUBSCRIPTION_ID)
-command = "az account set -s "+ SUBSCRIPTION_ID
+print(f"Set azure context to subscription: {SUBSCRIPTION_ID}")
+command = f"az account set -s {SUBSCRIPTION_ID}"
 executeCmd (command)
 
-print ("Creating azure resource group: "+GROUP_NAME)
-command="az group create --name "+GROUP_NAME+" --location "+AZURE_REGION
+print(f"Creating azure resource group: {GROUP_NAME}")
+command = f"az group create --name {GROUP_NAME} --location {AZURE_REGION}"
 executeCmd (command)
 
-SP_NAME = AZURE_REGION + '_' + GROUP_NAME + '_' + CLUSTER_NAME
-print ("Creating Service Principal: "+SP_NAME)
-command = "az ad sp create-for-rbac --skip-assignment --name http://" + SP_NAME
+SP_NAME = f'{AZURE_REGION}_{GROUP_NAME}_{CLUSTER_NAME}'
+print(f"Creating Service Principal: {SP_NAME}")
+command = f"az ad sp create-for-rbac --skip-assignment --name http://{SP_NAME}"
 SP_RESULT=getoutput(command)
 SP_JSON = json.loads(SP_RESULT[SP_RESULT.find("{"):])
 SP_PRINCIPAL = (SP_JSON['appId'])
@@ -78,18 +78,21 @@ SP_PW = (SP_JSON['password'])
 # Waiting for 10 seconds for the SP to sync
 sleep(10)
 
-print("Creating AKS cluster: "+CLUSTER_NAME)
-command = "az aks create --name "+CLUSTER_NAME+" --resource-group "+GROUP_NAME+" --generate-ssh-keys --node-vm-size "+VM_SIZE+" --node-count "+AKS_NODE_COUNT+ " --service-principal " + SP_PRINCIPAL + " --client-secret " + SP_PW
+print(f"Creating AKS cluster: {CLUSTER_NAME}")
+command = f"az aks create --name {CLUSTER_NAME} --resource-group {GROUP_NAME} --generate-ssh-keys --node-vm-size {VM_SIZE} --node-count {AKS_NODE_COUNT} --service-principal {SP_PRINCIPAL} --client-secret {SP_PW}"
+
 executeCmd (command)
 
-command = "az aks get-credentials --overwrite-existing --name "+CLUSTER_NAME+" --resource-group "+GROUP_NAME+" --admin"
+command = f"az aks get-credentials --overwrite-existing --name {CLUSTER_NAME} --resource-group {GROUP_NAME} --admin"
+
 executeCmd (command)
 
-print("Creating SQL Big Data cluster:" +CLUSTER_NAME)
+print(f"Creating SQL Big Data cluster:{CLUSTER_NAME}")
 command="azdata bdc config init --source aks-dev-test --target custom --force"
 executeCmd (command)
 
-command="azdata bdc config replace -c custom/bdc.json -j ""metadata.name=" + CLUSTER_NAME + ""
+command = f"azdata bdc config replace -c custom/bdc.json -j metadata.name={CLUSTER_NAME}"
+
 executeCmd (command)
 
 # Use this only if you are using a private registry different than default Micrososft registry (mcr). 
@@ -105,7 +108,7 @@ executeCmd (command)
 command="azdata bdc create -c custom --accept-eula yes"
 executeCmd (command)
 
-command="azdata login -n " + CLUSTER_NAME
+command = f"azdata login -n {CLUSTER_NAME}"
 executeCmd (command)
 
 print("")

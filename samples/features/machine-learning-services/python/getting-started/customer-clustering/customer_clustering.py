@@ -61,7 +61,7 @@ def perform_clustering():
 
     data_source = revoscale.RxSqlServerData(sql_query=input_query, column_info=column_info,
                                               connection_string=conn_str)
-    
+
     # import data source and convert to pandas dataframe.
     customer_data = pd.DataFrame(revoscalepy.rx_import(data_source))
     print("Data frame:", customer_data.head(n=20))
@@ -108,7 +108,7 @@ def perform_clustering():
     # For each cluster, count the members.
     for c in range(n_clusters):
         cluster_members=customer_data[customer_data['cluster'] == c][:]
-        print('Cluster{}(n={}):'.format(c, len(cluster_members)))
+        print(f'Cluster{c}(n={len(cluster_members)}):')
         print('-'* 17)
 
     # Print mean values per cluster.

@@ -40,13 +40,16 @@ data_all = spark.read.format('csv')\
         ignoreTrailingWhiteSpace='true')\
     .load(filename) #.load(datafile) for local file
 
-print("Number of rows: {},  Number of coulumns : {}".format(data_all.count(), len(data_all.columns)))
+print(
+    f"Number of rows: {data_all.count()},  Number of coulumns : {len(data_all.columns)}"
+)
+
 
 #replace "-" with "_" in column names
 columns_new = [col.replace("-", "_") for col in data_all.columns]
 data_all = data_all.toDF(*columns_new)
 
-data_all.printSchema() 
+data_all.printSchema()
 data_all.show(5)
 
 # choose feature columns and the label column for training.
@@ -54,7 +57,7 @@ label = "income"
 #xvars = ["age", "hours_per_week"] #all numeric
 xvars = ["age", "hours_per_week", "education"] #numeric + string
 
-print("label: {}, features: {}".format(label, xvars))
+print(f"label: {label}, features: {xvars}")
 
 select_cols = xvars
 select_cols.append(label)
@@ -65,8 +68,8 @@ data = data_all.select(select_cols)
 
 train, test = data.randomSplit([0.75, 0.25], seed=123)
 
-print("train ({}, {})".format(train.count(), len(train.columns)))
-print("test ({}, {})".format(test.count(), len(test.columns)))
+print(f"train ({train.count()}, {len(train.columns)})")
+print(f"test ({test.count()}, {len(test.columns)})")
 
 train_data_path = os.path.join(hdfs_path, "AdultCensusIncomeTrain")
 test_data_path = os.path.join(hdfs_path, "AdultCensusIncomeTest")
@@ -75,12 +78,15 @@ test_data_path = os.path.join(hdfs_path, "AdultCensusIncomeTest")
 train.write.mode('overwrite').orc(train_data_path)
 test.write.mode('overwrite').orc(test_data_path)
 
-print("train and test datasets saved to {} and {}".format(train_data_path, test_data_path))
+print(
+    f"train and test datasets saved to {train_data_path} and {test_data_path}"
+)
+
 
 train_read = spark.read.orc(train_data_path)
 test_read = spark.read.orc(test_data_path)
 
-assert train_read.schema == train.schema and train_read.count() == train.count() 
+assert train_read.schema == train.schema and train_read.count() == train.count()
 assert test_read.schema == test.schema and test_read.count() == test.count()
 
 ###############################################################################
@@ -101,11 +107,11 @@ dtypes.pop(label)
 si_xvars = []
 ohe_xvars = []
 featureCols = []
-for idx,key in enumerate(dtypes):
-    if dtypes[key] == "string":
+for key, value in dtypes.items():
+    if value == "string":
         featureCol = "-".join([key, "encoded"])
         featureCols.append(featureCol)
-        
+
         tmpCol = "-".join([key, "tmp"])
         si_xvars.append(StringIndexer(inputCol=key, outputCol=tmpCol, handleInvalid="skip")) #, handleInvalid="keep"
         ohe_xvars.append(OneHotEncoderEstimator(inputCols=[tmpCol], outputCols=[featureCol]))
@@ -120,13 +126,9 @@ si_label = StringIndexer(inputCol=label, outputCol='label')
 assembler = VectorAssembler(inputCols=featureCols, outputCol="features")
 
 # put together the pipeline
-stages = []
-stages.extend(si_xvars)
+stages = list(si_xvars)
 stages.extend(ohe_xvars)
-stages.append(si_label)
-stages.append(assembler)
-stages.append(lr)
-
+stages.extend((si_label, assembler, lr))
 pipe = Pipeline(stages=stages)
 print("Pipeline Created")
 
@@ -152,8 +154,8 @@ bce = BinaryClassificationEvaluator(rawPredictionCol='rawPrediction')
 au_roc = bce.setMetricName('areaUnderROC').evaluate(pred)
 au_prc = bce.setMetricName('areaUnderPR').evaluate(pred)
 
-print("Area under ROC: {}".format(au_roc))
-print("Area Under PR: {}".format(au_prc))
+print(f"Area under ROC: {au_roc}")
+print(f"Area Under PR: {au_prc}")
 
 ###############################################################################
 ## save and load the model with ML persistence
@@ -164,14 +166,14 @@ model_name = "AdultCensus.mml"
 model_fs = os.path.join(hdfs_path, model_name)
 
 model.write().overwrite().save(model_fs)
-print("saved model to {}".format(model_fs))
+print(f"saved model to {model_fs}")
 
 # load the model file (from hdfs)
 print("load pyspark model from hdfs")
 model_loaded = PipelineModel.load(model_fs)
 assert str(model_loaded) == str(model)
 
-print("loaded model from {}".format(model_fs))
+print(f"loaded model from {model_fs}")
 print("Model is " , model_loaded)
 print("Model stages", model_loaded.stages)
 
@@ -190,7 +192,7 @@ model_file = os.path.join(model_name_path, model_name_export)
 if os.path.isfile(model_file):
     os.remove(model_file)
 
-model_file_path = "jar:file:{}".format(model_file)
+model_file_path = f"jar:file:{model_file}"
 model.serializeToBundle(model_file_path, model.transform(train))
 
 ## import mleap model

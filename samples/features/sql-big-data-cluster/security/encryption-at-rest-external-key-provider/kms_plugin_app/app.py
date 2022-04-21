@@ -34,8 +34,8 @@ def handler(operation, payload, pin, key_attributes, version):
     else:
         # Throw exception on unsupported operation.
         #
-        raise Exception('Unsupported operation ' + operation)
-    
+        raise Exception(f'Unsupported operation {operation}')
+
     # The response should be a base64 url encoded JSON expected by the control plane.
     #
     serialized_json_response = json.dumps(response.__dict__).encode("utf-8")

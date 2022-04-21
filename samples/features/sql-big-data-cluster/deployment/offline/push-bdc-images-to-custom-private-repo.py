@@ -57,29 +57,42 @@ images = ['mssql-app-service-proxy',
 # print("")
 
 
-print("Pulling images from source repository: " + SOURCE_DOCKER_REGISTRY + "/" + SOURCE_DOCKER_REPOSITORY)
-cmd = ""
-for image in images:
-     cmd += "docker pull " + SOURCE_DOCKER_REGISTRY + "/" + SOURCE_DOCKER_REPOSITORY + "/" + image + ":" + SOURCE_DOCKER_TAG +  " & "
+print(
+    f"Pulling images from source repository: {SOURCE_DOCKER_REGISTRY}/{SOURCE_DOCKER_REPOSITORY}"
+)
+
+cmd = "".join(
+    f"docker pull {SOURCE_DOCKER_REGISTRY}/{SOURCE_DOCKER_REPOSITORY}/{image}:{SOURCE_DOCKER_TAG} & "
+    for image in images
+)
+
 cmd = cmd[:len(cmd)-3]
 execute_cmd(cmd)
 
-print("Execute docker login to target registry:" + TARGET_DOCKER_REGISTRY)
-cmd = "docker login " + TARGET_DOCKER_REGISTRY + " -u " + TARGET_DOCKER_USERNAME + " -p " + TARGET_DOCKER_PASSWORD
+print(f"Execute docker login to target registry:{TARGET_DOCKER_REGISTRY}")
+cmd = f"docker login {TARGET_DOCKER_REGISTRY} -u {TARGET_DOCKER_USERNAME} -p {TARGET_DOCKER_PASSWORD}"
+
 execute_cmd(cmd)
 print("")
 
 print("Tagging local images...")
-cmd = ""
-for image in images:
-     cmd += "docker tag " + SOURCE_DOCKER_REGISTRY + "/" + SOURCE_DOCKER_REPOSITORY + "/" + image + ":" + SOURCE_DOCKER_TAG + " " + TARGET_DOCKER_REGISTRY + "/" + TARGET_DOCKER_REPOSITORY + "/" + image + ":" + TARGET_DOCKER_TAG + " & "
+cmd = "".join(
+    f"docker tag {SOURCE_DOCKER_REGISTRY}/{SOURCE_DOCKER_REPOSITORY}/{image}:{SOURCE_DOCKER_TAG} {TARGET_DOCKER_REGISTRY}/{TARGET_DOCKER_REPOSITORY}/{image}:{TARGET_DOCKER_TAG} & "
+    for image in images
+)
+
 cmd = cmd[:len(cmd)-3]
 execute_cmd(cmd)
 
-print("Push images to target Docker repository: " + TARGET_DOCKER_REGISTRY + "/" + TARGET_DOCKER_REPOSITORY)
-cmd = ""
-for image in images:
-     cmd += "docker push " + TARGET_DOCKER_REGISTRY + "/" + TARGET_DOCKER_REPOSITORY + "/" + image + ":" + TARGET_DOCKER_TAG + " & "
+print(
+    f"Push images to target Docker repository: {TARGET_DOCKER_REGISTRY}/{TARGET_DOCKER_REPOSITORY}"
+)
+
+cmd = "".join(
+    f"docker push {TARGET_DOCKER_REGISTRY}/{TARGET_DOCKER_REPOSITORY}/{image}:{TARGET_DOCKER_TAG} & "
+    for image in images
+)
+
 cmd = cmd[:len(cmd)-3]
 execute_cmd(cmd)
 
